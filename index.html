@@ -1,0 +1,270 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Paylix — Buy & Redeem Variables</title>
+<style>
+body {margin:0;font-family:'Arial',sans-serif;background:#0a0a0a;color:#fff;overflow-x:hidden;}
+header {display:flex;justify-content:space-between;padding:1rem 2rem;background:rgba(255,255,255,0.05);position:sticky;top:0;z-index:100;}
+header h1 {margin:0;color:#00ffff;}
+nav button {background:none;border:1px solid #00ffff;color:#00ffff;padding:0.5rem 1rem;cursor:pointer;margin-left:0.5rem;border-radius:5px;transition:0.3s;}
+nav button:hover {background:rgba(0,255,255,0.1);}
+main {padding:2rem;}
+.hero {text-align:center;margin-top:4rem;}
+.hero h2 {font-size:2.5rem;color:#00ffff;}
+.hero p {font-size:1.2rem;color:#0ff;}
+.cta {margin-top:1rem;padding:0.8rem 2rem;font-size:1rem;border:none;background:#00ffff;color:#000;cursor:pointer;border-radius:5px;transition:0.3s;}
+.cta:hover {background:#0ff;}
+section.hidden {display:none;}
+input, select {padding:0.5rem;margin:0.3rem;border-radius:5px;border:1px solid #00ffff;background:#111;color:#0ff;}
+#floaters {position:fixed;top:0;left:0;width:100%;height:100%;pointer-events:none;z-index:-1;}
+.floater {position:absolute;width:20px;height:20px;background:rgba(0,255,255,0.2);border-radius:50%;animation:float 10s linear infinite;}
+@keyframes float {0%{transform:translateY(0) translateX(0) rotate(0deg);}50%{transform:translateY(-100px) translateX(50px) rotate(180deg);}100%{transform:translateY(0) translateX(0) rotate(360deg);}}
+.modal {position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.85);display:flex;justify-content:center;align-items:center;opacity:0;pointer-events:none;transition:opacity 0.4s ease;}
+.modal.show {opacity:1;pointer-events:auto;}
+.modal-inner {background:#111;padding:2rem;border-radius:10px;border:1px solid #0ff;max-width:400px;width:90%;text-align:center;position:relative;animation:fadeIn 0.4s ease;}
+@keyframes fadeIn {from {transform: translateY(-20px);opacity:0;} to {transform:translateY(0);opacity:1;}}
+.close {position:absolute;top:10px;right:10px;cursor:pointer;color:#0ff;font-size:1.2rem;}
+.cards {display:flex;flex-wrap:wrap;gap:0.5rem;margin-top:1rem;}
+.card {padding:0.5rem 1rem;border:1px solid #0ff;border-radius:5px;background:#111;}
+.buyBtn {margin-top:0.5rem;padding:0.3rem 0.6rem;border:none;border-radius:5px;background:#0ff;color:#000;cursor:pointer;transition:0.3s;}
+.buyBtn:hover {background:#0cc;}
+</style>
+</head>
+<body>
+
+<header>
+<h1>Paylix</h1>
+<nav>
+  <button id="btnOpenAuth">Sign In / Sign Up</button>
+  <button id="btnDashboard" style="display:none">Dashboard</button>
+  <button id="btnOwner" style="display:none">Owner</button>
+</nav>
+</header>
+
+<main>
+<section class="hero">
+<h2>Create & Sell Your Own Variables</h2>
+<p>Secure. Private. Mysterious.</p>
+<button class="cta" id="btnStart">Sign In to Start</button>
+</section>
+
+<section id="createSection" class="hidden">
+<h2>Create a Custom Variable</h2>
+<input id="varName" placeholder="Variable Name">
+<input id="varDesc" placeholder="Description">
+<input id="varPrice" placeholder="Price ($)" type="number" step="0.01" min="0">
+<button id="btnCreate">Add Variable</button>
+<h3>Your Variables</h3>
+<div id="myVars" class="cards"></div>
+
+<h3>Redeem Variable</h3>
+<input id="invoiceInput" placeholder="Enter Invoice ID">
+<button id="redeemBtn">Redeem</button>
+<div id="redeemedVar"></div>
+</section>
+
+<section id="ownerSection" class="hidden">
+<h2>Owner Dashboard</h2>
+<div>
+  <button id="btnRefreshLogs">Refresh Logs</button>
+</div>
+<h3>Logs (most recent)</h3>
+<div id="logs"></div>
+
+<h3>Generate Invoice (Owner Only)</h3>
+<div id="invoiceGenerator">
+  <input id="genUserEmail" placeholder="User Email">
+  <select id="genVarSelect">
+    <option value="">Select Variable</option>
+  </select>
+  <button id="btnGenInvoice">Generate Invoice</button>
+  <div id="generatedInvoices"></div>
+</div>
+</section>
+</main>
+
+<div id="floaters"></div>
+
+<div id="authModal" class="modal">
+<div class="modal-inner">
+  <button class="close" id="closeAuth">×</button>
+  <h3 id="authTitle">Sign In</h3>
+  <div id="authForms">
+    <div id="signinForm">
+      <input id="siEmail" placeholder="Email" type="email">
+      <input id="siPassword" placeholder="Password" type="password">
+      <button id="btnSignIn">Sign In</button>
+      <p>Don't have an account? <a id="toSignup" href="#">Sign up</a></p>
+    </div>
+    <div id="signupForm" class="hidden">
+      <input id="suEmail" placeholder="Email" type="email">
+      <input id="suPassword" placeholder="Password" type="password">
+      <button id="btnSignUp">Sign Up</button>
+      <p>Already have an account? <a id="toSignin" href="#">Sign in</a></p>
+    </div>
+  </div>
+</div>
+</div>
+
+<script>
+// Floating background
+for(let i=0;i<30;i++){
+  const f=document.createElement('div');
+  f.classList.add('floater');
+  f.style.left=Math.random()*100+'vw';
+  f.style.top=Math.random()*100+'vh';
+  f.style.width=f.style.height=(Math.random()*20+10)+'px';
+  f.style.animationDuration=(Math.random()*20+10)+'s';
+  document.getElementById('floaters').appendChild(f);
+}
+
+// Frontend storage
+let users=[{email:'owner@paylix.com',password:'ownerpass'}];
+let currentUser=null;
+let logs=[];
+let vars=[];
+let purchases=[];
+
+// Modal logic
+const modal=document.getElementById('authModal');
+const signinForm=document.getElementById('signinForm');
+const signupForm=document.getElementById('signupForm');
+function openModal(){modal.classList.add('show');}
+function closeModal(){modal.classList.remove('show');}
+document.getElementById('btnOpenAuth').onclick=openModal;
+document.getElementById('btnStart').onclick=openModal;
+document.getElementById('closeAuth').onclick=closeModal;
+document.getElementById('toSignup').onclick=()=>{
+  signinForm.classList.add('hidden');
+  signupForm.classList.remove('hidden');
+  document.getElementById('authTitle').innerText='Sign Up';
+};
+document.getElementById('toSignin').onclick=()=>{
+  signinForm.classList.remove('hidden');
+  signupForm.classList.add('hidden');
+  document.getElementById('authTitle').innerText='Sign In';
+};
+
+// Signup
+document.getElementById('btnSignUp').onclick=()=>{
+  const email=document.getElementById('suEmail').value;
+  const password=document.getElementById('suPassword').value;
+  if(!email||!password){alert('Fill in all fields');return;}
+  if(users.find(u=>u.email===email)){alert('User exists');return;}
+  users.push({email,password});
+  logs.push({type:'signup',email,time:new Date().toLocaleString()});
+  currentUser=email;
+  alert('Signup successful!');
+  showDashboardButtons(email);
+  closeModal();
+  document.getElementById('suEmail').value='';
+  document.getElementById('suPassword').value='';
+};
+
+// Signin
+document.getElementById('btnSignIn').onclick=()=>{
+  const email=document.getElementById('siEmail').value;
+  const password=document.getElementById('siPassword').value;
+  const user=users.find(u=>u.email===email && u.password===password);
+  if(!user){alert('Invalid credentials');return;}
+  logs.push({type:'login',email,time:new Date().toLocaleString()});
+  currentUser=email;
+  alert('Login successful!');
+  showDashboardButtons(email);
+  closeModal();
+  document.getElementById('siEmail').value='';
+  document.getElementById('siPassword').value='';
+};
+
+function showDashboardButtons(email){
+  document.getElementById('btnDashboard').style.display='inline';
+  if(email==='owner@paylix.com') document.getElementById('btnOwner').style.display='inline';
+}
+
+// Dashboard toggle
+document.getElementById('btnDashboard').onclick=()=>document.getElementById('createSection').classList.toggle('hidden');
+document.getElementById('btnOwner').onclick=()=>document.getElementById('ownerSection').classList.toggle('hidden');
+
+// Populate variable dropdown for owner invoice generator
+function refreshVarDropdown() {
+  const select=document.getElementById('genVarSelect');
+  select.innerHTML='<option value="">Select Variable</option>';
+  vars.forEach(v=>{
+    const opt=document.createElement('option');
+    opt.value=v.name;
+    opt.innerText=`${v.name} ($${v.price})`;
+    select.appendChild(opt);
+  });
+}
+
+// Create variable
+document.getElementById('btnCreate').onclick=()=>{
+  const name=document.getElementById('varName').value;
+  const desc=document.getElementById('varDesc').value;
+  const price=document.getElementById('varPrice').value;
+  if(!name||!price){alert('Name and price required');return;}
+  const variable={name,desc,price};
+  vars.push(variable);
+
+  const card=document.createElement('div');
+  card.className='card';
+  card.innerHTML=`
+    <strong>${name}</strong><br>${desc}<br>$${price} <br>
+    <button class="buyBtn">Buy</button>
+  `;
+  card.querySelector('.buyBtn').onclick=()=>{
+    if(!currentUser){alert('Sign in first');return;}
+    const invoiceId='INV-'+Math.floor(Math.random()*1000000);
+    const value='SECRET-'+variable.name; 
+    purchases.push({user:currentUser,variableName:variable.name,invoiceId,value});
+    logs.push({type:'purchase',email:currentUser,item:variable.name,price:variable.price,invoiceId,time:new Date().toLocaleString()});
+    alert(`Invoice ID: ${invoiceId} sent to your email!\nRedirecting to purchase page...`);
+    window.open('https://example.com/pay?item='+encodeURIComponent(variable.name),'_blank');
+  };
+  document.getElementById('myVars').appendChild(card);
+  document.getElementById('varName').value='';
+  document.getElementById('varDesc').value='';
+  document.getElementById('varPrice').value='';
+  refreshVarDropdown();
+};
+
+// Redeem variable
+document.getElementById('redeemBtn').onclick=()=>{
+  const input=document.getElementById('invoiceInput').value.trim();
+  const purchase=purchases.find(p=>p.invoiceId===input && p.user===currentUser);
+  if(purchase){
+    document.getElementById('redeemedVar').innerText=`Variable Value: ${purchase.value}`;
+    alert(`Variable ${purchase.variableName} redeemed!`);
+  } else alert('Invalid invoice ID');
+};
+
+// Owner logs
+document.getElementById('btnRefreshLogs').onclick=()=>{
+  const container=document.getElementById('logs');
+  container.innerHTML=logs.slice().reverse().map(l=>{
+    if(l.type==='purchase' || l.type==='manual-invoice') return `<p>${l.time} — PURCHASE: ${l.email} bought "${l.item}" for $${l.price||'N/A'}, Invoice: ${l.invoiceId}</p>`;
+    else return `<p>${l.time} — ${l.type.toUpperCase()}: ${l.email}</p>`;
+  }).join('');
+};
+
+// Owner manual invoice generation
+document.getElementById('btnGenInvoice').onclick=()=>{
+  const email=document.getElementById('genUserEmail').value.trim();
+  const variableName=document.getElementById('genVarSelect').value;
+  if(!email||!variableName){alert('Fill in all fields');return;}
+  const invoiceId='INV-'+Math.floor(Math.random()*1000000);
+  const value='SECRET-'+variableName;
+  purchases.push({user:email,variableName,invoiceId,value});
+  logs.push({type:'manual-invoice',email,item:variableName,invoiceId,time:new Date().toLocaleString()});
+  const genDiv=document.getElementById('generatedInvoices');
+  const p=document.createElement('p');
+  p.innerText=`Generated Invoice: ${invoiceId} for ${email} (${variableName})`;
+  genDiv.appendChild(p);
+  alert(`Invoice ${invoiceId} generated for ${email}`);
+};
+</script>
+
+</body>
+</html>
