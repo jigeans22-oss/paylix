@@ -5,6 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Paylix — Buy & Redeem Variables</title>
 <style>
+/* --- Your existing styles --- */
 body {margin:0;font-family:'Arial',sans-serif;background:#0a0a0a;color:#fff;overflow-x:hidden;}
 header {display:flex;justify-content:space-between;padding:1rem 2rem;background:rgba(255,255,255,0.05);position:sticky;top:0;z-index:100;}
 header h1 {margin:0;color:#00ffff;}
@@ -40,6 +41,7 @@ input, select {padding:0.5rem;margin:0.3rem;border-radius:5px;border:1px solid #
   <button id="btnOpenAuth">Sign In / Sign Up</button>
   <button id="btnDashboard" style="display:none">Dashboard</button>
   <button id="btnOwner" style="display:none">Owner</button>
+  <button id="btnLogout" style="display:none">Logout</button>
 </nav>
 </header>
 
@@ -68,19 +70,8 @@ input, select {padding:0.5rem;margin:0.3rem;border-radius:5px;border:1px solid #
 <section id="ownerSection" class="hidden">
 <h2>Owner Dashboard</h2>
 <div>
-  <button id="btnRefreshLogs">Refresh Logs</button>
-</div>
-<h3>Logs (most recent)</h3>
-<div id="logs"></div>
-
-<h3>Generate Invoice (Owner Only)</h3>
-<div id="invoiceGenerator">
-  <input id="genUserEmail" placeholder="User Email">
-  <select id="genVarSelect">
-    <option value="">Select Variable</option>
-  </select>
-  <button id="btnGenInvoice">Generate Invoice</button>
-  <div id="generatedInvoices"></div>
+  <h3>Variables & Purchases</h3>
+  <div id="ownerVars"></div>
 </div>
 </section>
 </main>
@@ -120,12 +111,17 @@ for(let i=0;i<30;i++){
   document.getElementById('floaters').appendChild(f);
 }
 
-// Frontend storage
-let users=[{email:'owner@paylix.com',password:'ownerpass'}];
-let currentUser=null;
-let logs=[];
-let vars=[];
-let purchases=[];
+// LocalStorage data
+let users = JSON.parse(localStorage.getItem('users') || '[]');
+// Add default owner if not exists
+if(!users.find(u=>u.email==='prazee@.com')) {
+    users.push({email:'prazee@.com', password:'billy'});
+    localStorage.setItem('users', JSON.stringify(users));
+}
+
+let currentUser = localStorage.getItem('currentUser') || null;
+let vars = JSON.parse(localStorage.getItem('vars') || '[]');
+let purchases = JSON.parse(localStorage.getItem('purchases') || '[]');
 
 // Modal logic
 const modal=document.getElementById('authModal');
@@ -147,6 +143,9 @@ document.getElementById('toSignin').onclick=()=>{
   document.getElementById('authTitle').innerText='Sign In';
 };
 
+// Show dashboard if already logged in
+if(currentUser) showDashboardButtons(currentUser);
+
 // Signup
 document.getElementById('btnSignUp').onclick=()=>{
   const email=document.getElementById('suEmail').value;
@@ -154,8 +153,9 @@ document.getElementById('btnSignUp').onclick=()=>{
   if(!email||!password){alert('Fill in all fields');return;}
   if(users.find(u=>u.email===email)){alert('User exists');return;}
   users.push({email,password});
-  logs.push({type:'signup',email,time:new Date().toLocaleString()});
+  localStorage.setItem('users', JSON.stringify(users));
   currentUser=email;
+  localStorage.setItem('currentUser', currentUser);
   alert('Signup successful!');
   showDashboardButtons(email);
   closeModal();
@@ -169,8 +169,8 @@ document.getElementById('btnSignIn').onclick=()=>{
   const password=document.getElementById('siPassword').value;
   const user=users.find(u=>u.email===email && u.password===password);
   if(!user){alert('Invalid credentials');return;}
-  logs.push({type:'login',email,time:new Date().toLocaleString()});
   currentUser=email;
+  localStorage.setItem('currentUser', currentUser);
   alert('Login successful!');
   showDashboardButtons(email);
   closeModal();
@@ -178,25 +178,25 @@ document.getElementById('btnSignIn').onclick=()=>{
   document.getElementById('siPassword').value='';
 };
 
-function showDashboardButtons(email){
-  document.getElementById('btnDashboard').style.display='inline';
-  if(email==='owner@paylix.com') document.getElementById('btnOwner').style.display='inline';
-}
+// Logout
+document.getElementById('btnLogout').onclick = () => {
+  currentUser=null;
+  localStorage.removeItem('currentUser');
+  document.getElementById('btnDashboard').style.display='none';
+  document.getElementById('btnOwner').style.display='none';
+  document.getElementById('btnLogout').style.display='none';
+  alert('Logged out!');
+};
 
 // Dashboard toggle
 document.getElementById('btnDashboard').onclick=()=>document.getElementById('createSection').classList.toggle('hidden');
 document.getElementById('btnOwner').onclick=()=>document.getElementById('ownerSection').classList.toggle('hidden');
 
-// Populate variable dropdown for owner invoice generator
-function refreshVarDropdown() {
-  const select=document.getElementById('genVarSelect');
-  select.innerHTML='<option value="">Select Variable</option>';
-  vars.forEach(v=>{
-    const opt=document.createElement('option');
-    opt.value=v.name;
-    opt.innerText=`${v.name} ($${v.price})`;
-    select.appendChild(opt);
-  });
+function showDashboardButtons(email){
+  document.getElementById('btnDashboard').style.display='inline';
+  document.getElementById('btnLogout').style.display='inline';
+  if(email==='prazee@.com') document.getElementById('btnOwner').style.display='inline';
+  renderVars();
 }
 
 // Create variable
@@ -207,63 +207,48 @@ document.getElementById('btnCreate').onclick=()=>{
   if(!name||!price){alert('Name and price required');return;}
   const variable={name,desc,price};
   vars.push(variable);
-
-  const card=document.createElement('div');
-  card.className='card';
-  card.innerHTML=`
-    <strong>${name}</strong><br>${desc}<br>$${price} <br>
-    <button class="buyBtn">Buy</button>
-  `;
-  card.querySelector('.buyBtn').onclick=()=>{
-    if(!currentUser){alert('Sign in first');return;}
-    const invoiceId='INV-'+Math.floor(Math.random()*1000000);
-    const value='SECRET-'+variable.name; 
-    purchases.push({user:currentUser,variableName:variable.name,invoiceId,value});
-    logs.push({type:'purchase',email:currentUser,item:variable.name,price:variable.price,invoiceId,time:new Date().toLocaleString()});
-    alert(`Invoice ID: ${invoiceId} sent to your email!\nRedirecting to purchase page...`);
-    window.open('https://example.com/pay?item='+encodeURIComponent(variable.name),'_blank');
-  };
-  document.getElementById('myVars').appendChild(card);
+  localStorage.setItem('vars', JSON.stringify(vars));
+  renderVars();
   document.getElementById('varName').value='';
   document.getElementById('varDesc').value='';
   document.getElementById('varPrice').value='';
-  refreshVarDropdown();
 };
 
-// Redeem variable
-document.getElementById('redeemBtn').onclick=()=>{
-  const input=document.getElementById('invoiceInput').value.trim();
-  const purchase=purchases.find(p=>p.invoiceId===input && p.user===currentUser);
-  if(purchase){
-    document.getElementById('redeemedVar').innerText=`Variable Value: ${purchase.value}`;
-    alert(`Variable ${purchase.variableName} redeemed!`);
-  } else alert('Invalid invoice ID');
-};
+// Render variables
+function renderVars(){
+  const container=document.getElementById('myVars');
+  container.innerHTML='';
+  vars.forEach(variable=>{
+    const card=document.createElement('div');
+    card.className='card';
+    card.innerHTML=`
+      <strong>${variable.name}</strong><br>${variable.desc}<br>$${variable.price}<br>
+      <button class="buyBtn">Buy</button>
+    `;
+    card.querySelector('.buyBtn').onclick=()=>{
+      if(!currentUser){alert('Sign in first');return;}
+      const invoiceId='INV-'+Math.floor(Math.random()*1000000);
+      const value='SECRET-'+variable.name; 
+      purchases.push({user:currentUser,variableName:variable.name,invoiceId,value});
+      localStorage.setItem('purchases', JSON.stringify(purchases));
+      alert(`Invoice ID: ${invoiceId} saved locally!`);
+    };
+    container.appendChild(card);
+  });
+  renderOwnerDashboard();
+}
 
-// Owner logs
-document.getElementById('btnRefreshLogs').onclick=()=>{
-  const container=document.getElementById('logs');
-  container.innerHTML=logs.slice().reverse().map(l=>{
-    if(l.type==='purchase' || l.type==='manual-invoice') return `<p>${l.time} — PURCHASE: ${l.email} bought "${l.item}" for $${l.price||'N/A'}, Invoice: ${l.invoiceId}</p>`;
-    else return `<p>${l.time} — ${l.type.toUpperCase()}: ${l.email}</p>`;
-  }).join('');
-};
-
-// Owner manual invoice generation
-document.getElementById('btnGenInvoice').onclick=()=>{
-  const email=document.getElementById('genUserEmail').value.trim();
-  const variableName=document.getElementById('genVarSelect').value;
-  if(!email||!variableName){alert('Fill in all fields');return;}
-  const invoiceId='INV-'+Math.floor(Math.random()*1000000);
-  const value='SECRET-'+variableName;
-  purchases.push({user:email,variableName,invoiceId,value});
-  logs.push({type:'manual-invoice',email,item:variableName,invoiceId,time:new Date().toLocaleString()});
-  const genDiv=document.getElementById('generatedInvoices');
-  const p=document.createElement('p');
-  p.innerText=`Generated Invoice: ${invoiceId} for ${email} (${variableName})`;
-  genDiv.appendChild(p);
-  alert(`Invoice ${invoiceId} generated for ${email}`);
-};
+// Owner dashboard
+function renderOwnerDashboard(){
+  const container=document.getElementById('ownerVars');
+  container.innerHTML='';
+  if(currentUser!=='prazee@.com') return;
+  purchases.forEach(p=>{
+    const pEl=document.createElement('p');
+    pEl.innerText=`${p.user} bought ${p.variableName}, Invoice: ${p.invoiceId}, Value: ${p.value}`;
+    container.appendChild(pEl);
+  });
+}
 </script>
 
 </body>
