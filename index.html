@@ -1,255 +1,545 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Paylix — Buy & Redeem Variables</title>
-<style>
-/* --- Your existing styles --- */
-body {margin:0;font-family:'Arial',sans-serif;background:#0a0a0a;color:#fff;overflow-x:hidden;}
-header {display:flex;justify-content:space-between;padding:1rem 2rem;background:rgba(255,255,255,0.05);position:sticky;top:0;z-index:100;}
-header h1 {margin:0;color:#00ffff;}
-nav button {background:none;border:1px solid #00ffff;color:#00ffff;padding:0.5rem 1rem;cursor:pointer;margin-left:0.5rem;border-radius:5px;transition:0.3s;}
-nav button:hover {background:rgba(0,255,255,0.1);}
-main {padding:2rem;}
-.hero {text-align:center;margin-top:4rem;}
-.hero h2 {font-size:2.5rem;color:#00ffff;}
-.hero p {font-size:1.2rem;color:#0ff;}
-.cta {margin-top:1rem;padding:0.8rem 2rem;font-size:1rem;border:none;background:#00ffff;color:#000;cursor:pointer;border-radius:5px;transition:0.3s;}
-.cta:hover {background:#0ff;}
-section.hidden {display:none;}
-input, select {padding:0.5rem;margin:0.3rem;border-radius:5px;border:1px solid #00ffff;background:#111;color:#0ff;}
-#floaters {position:fixed;top:0;left:0;width:100%;height:100%;pointer-events:none;z-index:-1;}
-.floater {position:absolute;width:20px;height:20px;background:rgba(0,255,255,0.2);border-radius:50%;animation:float 10s linear infinite;}
-@keyframes float {0%{transform:translateY(0) translateX(0) rotate(0deg);}50%{transform:translateY(-100px) translateX(50px) rotate(180deg);}100%{transform:translateY(0) translateX(0) rotate(360deg);}}
-.modal {position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.85);display:flex;justify-content:center;align-items:center;opacity:0;pointer-events:none;transition:opacity 0.4s ease;}
-.modal.show {opacity:1;pointer-events:auto;}
-.modal-inner {background:#111;padding:2rem;border-radius:10px;border:1px solid #0ff;max-width:400px;width:90%;text-align:center;position:relative;animation:fadeIn 0.4s ease;}
-@keyframes fadeIn {from {transform: translateY(-20px);opacity:0;} to {transform:translateY(0);opacity:1;}}
-.close {position:absolute;top:10px;right:10px;cursor:pointer;color:#0ff;font-size:1.2rem;}
-.cards {display:flex;flex-wrap:wrap;gap:0.5rem;margin-top:1rem;}
-.card {padding:0.5rem 1rem;border:1px solid #0ff;border-radius:5px;background:#111;}
-.buyBtn {margin-top:0.5rem;padding:0.3rem 0.6rem;border:none;border-radius:5px;background:#0ff;color:#000;cursor:pointer;transition:0.3s;}
-.buyBtn:hover {background:#0cc;}
-</style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Whitelist System - Admin Panel</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        .gradient-bg { background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%); }
+        .sidebar { background: rgba(255, 255, 255, 0.95); }
+        .nav-item.active { background: #3b82f6; color: white; }
+        .nav-item:hover { background: #f3f4f6; }
+        .stats-card { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); }
+        .fade-in { animation: fadeIn 0.3s ease-in; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+    </style>
 </head>
-<body>
+<body class="gradient-bg min-h-screen">
+    <div class="flex h-screen">
+        <!-- Sidebar -->
+        <div class="sidebar w-64 shadow-xl">
+            <div class="p-6 border-b">
+                <h1 class="text-2xl font-bold text-gray-800 flex items-center">
+                    <i class="fas fa-shield-alt text-blue-500 mr-2"></i>
+                    Whitelist Panel
+                </h1>
+                <p class="text-sm text-gray-600 mt-1">Admin Control Center</p>
+            </div>
+            
+            <nav class="p-4">
+                <div class="space-y-1">
+                    <a href="#" class="nav-item active flex items-center px-4 py-3 rounded-lg transition-all" onclick="showSection('dashboard')">
+                        <i class="fas fa-tachometer-alt mr-3"></i>
+                        Dashboard
+                    </a>
+                    <a href="#" class="nav-item flex items-center px-4 py-3 rounded-lg transition-all" onclick="showSection('keys')">
+                        <i class="fas fa-key mr-3"></i>
+                        Key Management
+                    </a>
+                    <a href="#" class="nav-item flex items-center px-4 py-3 rounded-lg transition-all" onclick="showSection('users')">
+                        <i class="fas fa-users mr-3"></i>
+                        User Management
+                    </a>
+                    <a href="#" class="nav-item flex items-center px-4 py-3 rounded-lg transition-all" onclick="showSection('settings')">
+                        <i class="fas fa-cog mr-3"></i>
+                        Settings
+                    </a>
+                </div>
+            </nav>
+            
+            <div class="absolute bottom-0 left-0 right-0 p-4 border-t">
+                <div class="flex items-center justify-between text-sm">
+                    <span class="text-gray-600">Status</span>
+                    <span id="connectionStatus" class="bg-green-500 text-white px-2 py-1 rounded text-xs">Connected</span>
+                </div>
+            </div>
+        </div>
 
-<header>
-<h1>Paylix</h1>
-<nav>
-  <button id="btnOpenAuth">Sign In / Sign Up</button>
-  <button id="btnDashboard" style="display:none">Dashboard</button>
-  <button id="btnOwner" style="display:none">Owner</button>
-  <button id="btnLogout" style="display:none">Logout</button>
-</nav>
-</header>
+        <!-- Main Content -->
+        <div class="flex-1 overflow-auto">
+            <!-- Header -->
+            <header class="bg-white shadow-sm border-b">
+                <div class="px-6 py-4">
+                    <div class="flex justify-between items-center">
+                        <h2 id="pageTitle" class="text-xl font-semibold text-gray-800">Dashboard</h2>
+                        <div class="flex items-center space-x-4">
+                            <button onclick="refreshAll()" class="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-lg flex items-center transition">
+                                <i class="fas fa-sync-alt mr-2"></i>Refresh
+                            </button>
+                            <div class="text-sm text-gray-600">
+                                Last update: <span id="lastUpdateTime">Just now</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </header>
 
-<main>
-<section class="hero">
-<h2>Create & Sell Your Own Variables</h2>
-<p>Secure. Private. Mysterious.</p>
-<button class="cta" id="btnStart">Sign In to Start</button>
-</section>
+            <!-- Content Sections -->
+            <div class="p-6">
+                <!-- Dashboard Section -->
+                <div id="dashboard-section" class="section-content fade-in">
+                    <!-- Stats Cards -->
+                    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+                        <div class="stats-card text-white rounded-xl p-6 shadow-lg">
+                            <div class="flex items-center justify-between">
+                                <div>
+                                    <div class="text-3xl font-bold" id="totalKeys">0</div>
+                                    <div class="text-blue-100">Total Keys</div>
+                                </div>
+                                <i class="fas fa-key text-2xl opacity-80"></i>
+                            </div>
+                        </div>
+                        <div class="stats-card text-white rounded-xl p-6 shadow-lg">
+                            <div class="flex items-center justify-between">
+                                <div>
+                                    <div class="text-3xl font-bold" id="activeKeys">0</div>
+                                    <div class="text-blue-100">Active Keys</div>
+                                </div>
+                                <i class="fas fa-check-circle text-2xl opacity-80"></i>
+                            </div>
+                        </div>
+                        <div class="stats-card text-white rounded-xl p-6 shadow-lg">
+                            <div class="flex items-center justify-between">
+                                <div>
+                                    <div class="text-3xl font-bold" id="redeemedKeys">0</div>
+                                    <div class="text-blue-100">Redeemed</div>
+                                </div>
+                                <i class="fas fa-user-check text-2xl opacity-80"></i>
+                            </div>
+                        </div>
+                        <div class="stats-card text-white rounded-xl p-6 shadow-lg">
+                            <div class="flex items-center justify-between">
+                                <div>
+                                    <div class="text-3xl font-bold" id="expiredKeys">0</div>
+                                    <div class="text-blue-100">Expired</div>
+                                </div>
+                                <i class="fas fa-clock text-2xl opacity-80"></i>
+                            </div>
+                        </div>
+                    </div>
 
-<section id="createSection" class="hidden">
-<h2>Create a Custom Variable</h2>
-<input id="varName" placeholder="Variable Name">
-<input id="varDesc" placeholder="Description">
-<input id="varPrice" placeholder="Price ($)" type="number" step="0.01" min="0">
-<button id="btnCreate">Add Variable</button>
-<h3>Your Variables</h3>
-<div id="myVars" class="cards"></div>
+                    <!-- Quick Actions -->
+                    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+                        <div class="bg-white rounded-lg shadow-lg p-6">
+                            <h3 class="text-lg font-semibold text-gray-800 mb-4">Quick Actions</h3>
+                            <div class="grid grid-cols-2 gap-4">
+                                <button onclick="showSection('keys')" class="bg-blue-500 hover:bg-blue-600 text-white p-4 rounded-lg flex flex-col items-center transition">
+                                    <i class="fas fa-plus text-2xl mb-2"></i>
+                                    <span>Create Key</span>
+                                </button>
+                                <button onclick="loadKeys()" class="bg-green-500 hover:bg-green-600 text-white p-4 rounded-lg flex flex-col items-center transition">
+                                    <i class="fas fa-list text-2xl mb-2"></i>
+                                    <span>View Keys</span>
+                                </button>
+                                <button onclick="batchGenerate()" class="bg-purple-500 hover:bg-purple-600 text-white p-4 rounded-lg flex flex-col items-center transition">
+                                    <i class="fas fa-layer-group text-2xl mb-2"></i>
+                                    <span>Batch Generate</span>
+                                </button>
+                                <button onclick="exportKeys()" class="bg-orange-500 hover:bg-orange-600 text-white p-4 rounded-lg flex flex-col items-center transition">
+                                    <i class="fas fa-download text-2xl mb-2"></i>
+                                    <span>Export Data</span>
+                                </button>
+                            </div>
+                        </div>
 
-<h3>Redeem Variable</h3>
-<input id="invoiceInput" placeholder="Enter Invoice ID">
-<button id="redeemBtn">Redeem</button>
-<div id="redeemedVar"></div>
-</section>
+                        <div class="bg-white rounded-lg shadow-lg p-6">
+                            <h3 class="text-lg font-semibold text-gray-800 mb-4">System Status</h3>
+                            <div class="space-y-3">
+                                <div class="flex justify-between items-center p-3 bg-gray-50 rounded-lg">
+                                    <div class="flex items-center">
+                                        <i class="fas fa-robot text-blue-500 mr-3"></i>
+                                        <span>Discord Bot</span>
+                                    </div>
+                                    <span class="bg-green-500 text-white px-2 py-1 rounded text-xs">Online</span>
+                                </div>
+                                <div class="flex justify-between items-center p-3 bg-gray-50 rounded-lg">
+                                    <div class="flex items-center">
+                                        <i class="fas fa-server text-green-500 mr-3"></i>
+                                        <span>API Server</span>
+                                    </div>
+                                    <span class="bg-green-500 text-white px-2 py-1 rounded text-xs" id="apiStatus">Online</span>
+                                </div>
+                                <div class="flex justify-between items-center p-3 bg-gray-50 rounded-lg">
+                                    <div class="flex items-center">
+                                        <i class="fas fa-shield-alt text-purple-500 mr-3"></i>
+                                        <span>HWID Protection</span>
+                                    </div>
+                                    <span class="bg-green-500 text-white px-2 py-1 rounded text-xs">Active</span>
+                                </div>
+                                <div class="flex justify-between items-center p-3 bg-gray-50 rounded-lg">
+                                    <div class="flex items-center">
+                                        <i class="fas fa-database text-yellow-500 mr-3"></i>
+                                        <span>Database</span>
+                                    </div>
+                                    <span class="bg-green-500 text-white px-2 py-1 rounded text-xs">Healthy</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
 
-<section id="ownerSection" class="hidden">
-<h2>Owner Dashboard</h2>
-<div>
-  <h3>Variables & Purchases</h3>
-  <div id="ownerVars"></div>
-</div>
-</section>
-</main>
+                    <!-- Recent Activity -->
+                    <div class="bg-white rounded-lg shadow-lg p-6">
+                        <h3 class="text-lg font-semibold text-gray-800 mb-4">Recent Activity</h3>
+                        <div id="recentActivity" class="space-y-2">
+                            <div class="text-center text-gray-500 py-4">
+                                <i class="fas fa-spinner fa-spin text-xl mb-2"></i>
+                                <div>Loading activity...</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
 
-<div id="floaters"></div>
+                <!-- Key Management Section -->
+                <div id="keys-section" class="section-content hidden fade-in">
+                    <div class="bg-white rounded-lg shadow-lg p-6 mb-6">
+                        <h3 class="text-lg font-semibold text-gray-800 mb-4">Create New Key</h3>
+                        <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-1">Duration (Days)</label>
+                                <input type="number" id="keyDuration" value="30" min="1" class="w-full border rounded-lg px-3 py-2">
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-1">User ID (Optional)</label>
+                                <input type="text" id="keyUserId" placeholder="Discord User ID" class="w-full border rounded-lg px-3 py-2">
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-1">Note</label>
+                                <input type="text" id="keyNote" placeholder="Optional note" class="w-full border rounded-lg px-3 py-2">
+                            </div>
+                            <div class="flex items-end">
+                                <button onclick="createSingleKey()" class="w-full bg-blue-500 hover:bg-blue-600 text-white py-2 rounded-lg transition">
+                                    Create Key
+                                </button>
+                            </div>
+                        </div>
+                        
+                        <div id="keyResult" class="hidden mt-4 bg-green-50 border border-green-200 rounded-lg p-4">
+                            <div class="flex justify-between items-center mb-2">
+                                <span class="font-semibold text-green-800">Key Created Successfully!</span>
+                                <div class="flex space-x-2">
+                                    <button onclick="copyKey()" class="text-green-600 hover:text-green-800">
+                                        <i class="fas fa-copy"></i> Copy
+                                    </button>
+                                    <button onclick="hideKeyResult()" class="text-green-600 hover:text-green-800">
+                                        <i class="fas fa-times"></i>
+                                    </button>
+                                </div>
+                            </div>
+                            <div class="font-mono text-sm bg-green-100 p-3 rounded break-all" id="generatedKey"></div>
+                        </div>
+                    </div>
 
-<div id="authModal" class="modal">
-<div class="modal-inner">
-  <button class="close" id="closeAuth">×</button>
-  <h3 id="authTitle">Sign In</h3>
-  <div id="authForms">
-    <div id="signinForm">
-      <input id="siEmail" placeholder="Email" type="email">
-      <input id="siPassword" placeholder="Password" type="password">
-      <button id="btnSignIn">Sign In</button>
-      <p>Don't have an account? <a id="toSignup" href="#">Sign up</a></p>
+                    <!-- Keys List -->
+                    <div class="bg-white rounded-lg shadow-lg p-6">
+                        <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6">
+                            <h3 class="text-lg font-semibold text-gray-800">Manage Keys</h3>
+                            <div class="flex space-x-3 mt-2 sm:mt-0">
+                                <input type="text" id="searchKeys" placeholder="Search keys..." class="border rounded-lg px-3 py-2 w-64">
+                                <button onclick="loadKeys()" class="bg-gray-500 hover:bg-gray-600 text-white px-4 py-2 rounded-lg transition">
+                                    <i class="fas fa-sync-alt mr-2"></i>Refresh
+                                </button>
+                            </div>
+                        </div>
+                        
+                        <div class="overflow-x-auto">
+                            <table class="w-full">
+                                <thead class="bg-gray-50">
+                                    <tr>
+                                        <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Key</th>
+                                        <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Status</th>
+                                        <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">User</th>
+                                        <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Expires</th>
+                                        <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">HWID</th>
+                                        <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="keysTable" class="divide-y divide-gray-200">
+                                    <!-- Keys will be loaded here -->
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- User Management Section -->
+                <div id="users-section" class="section-content hidden fade-in">
+                    <div class="bg-white rounded-lg shadow-lg p-6">
+                        <h3 class="text-lg font-semibold text-gray-800 mb-4">User Management</h3>
+                        <div class="text-center text-gray-500 py-8">
+                            <i class="fas fa-users text-4xl mb-3 opacity-50"></i>
+                            <p>User management features coming soon</p>
+                            <p class="text-sm">This section will show detailed user information and activity</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Settings Section -->
+                <div id="settings-section" class="section-content hidden fade-in">
+                    <div class="bg-white rounded-lg shadow-lg p-6">
+                        <h3 class="text-lg font-semibold text-gray-800 mb-4">System Settings</h3>
+                        <div class="space-y-6">
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-2">API Configuration</label>
+                                    <input type="text" value="http://localhost:8080/api" class="w-full border rounded-lg px-3 py-2 bg-gray-50" readonly>
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-2">Authentication Token</label>
+                                    <div class="flex">
+                                        <input type="password" value="••••••••••••" class="w-full border rounded-l-lg px-3 py-2 bg-gray-50" readonly>
+                                        <button class="bg-gray-500 text-white px-4 rounded-r-lg">Show</button>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="border-t pt-4">
+                                <h4 class="font-medium text-gray-700 mb-3">Security Settings</h4>
+                                <div class="space-y-3">
+                                    <div class="flex items-center justify-between">
+                                        <span>HWID Protection</span>
+                                        <label class="relative inline-flex items-center cursor-pointer">
+                                            <input type="checkbox" class="sr-only peer" checked>
+                                            <div class="w-11 h-6 bg-gray-200 peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
+                                        </label>
+                                    </div>
+                                    <div class="flex items-center justify-between">
+                                        <span>Auto-expire Keys</span>
+                                        <label class="relative inline-flex items-center cursor-pointer">
+                                            <input type="checkbox" class="sr-only peer" checked>
+                                            <div class="w-11 h-6 bg-gray-200 peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
+                                        </label>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
     </div>
-    <div id="signupForm" class="hidden">
-      <input id="suEmail" placeholder="Email" type="email">
-      <input id="suPassword" placeholder="Password" type="password">
-      <button id="btnSignUp">Sign Up</button>
-      <p>Already have an account? <a id="toSignin" href="#">Sign in</a></p>
-    </div>
-  </div>
-</div>
-</div>
 
-<script>
-// Floating background
-for(let i=0;i<30;i++){
-  const f=document.createElement('div');
-  f.classList.add('floater');
-  f.style.left=Math.random()*100+'vw';
-  f.style.top=Math.random()*100+'vh';
-  f.style.width=f.style.height=(Math.random()*20+10)+'px';
-  f.style.animationDuration=(Math.random()*20+10)+'s';
-  document.getElementById('floaters').appendChild(f);
-}
+    <script>
+        const API_BASE = 'http://localhost:8080/api';
+        const AUTH_TOKEN = 'your-secret-key-here-change-this';
 
-// LocalStorage data
-let users = JSON.parse(localStorage.getItem('users') || '[]');
-// Add default owner if not exists
-if(!users.find(u=>u.email==='prazee@.com')) {
-    users.push({email:'prazee@.com', password:'billy'});
-    localStorage.setItem('users', JSON.stringify(users));
-}
+        // Navigation
+        function showSection(sectionName) {
+            // Hide all sections
+            document.querySelectorAll('.section-content').forEach(section => {
+                section.classList.add('hidden');
+            });
+            
+            // Remove active class from all nav items
+            document.querySelectorAll('.nav-item').forEach(item => {
+                item.classList.remove('active', 'bg-blue-500', 'text-white');
+                item.classList.add('text-gray-700');
+            });
+            
+            // Show selected section
+            document.getElementById(sectionName + '-section').classList.remove('hidden');
+            
+            // Activate nav item
+            event.target.classList.add('active', 'bg-blue-500', 'text-white');
+            event.target.classList.remove('text-gray-700');
+            
+            // Update page title
+            const titles = {
+                'dashboard': 'Dashboard',
+                'keys': 'Key Management',
+                'users': 'User Management',
+                'settings': 'Settings'
+            };
+            document.getElementById('pageTitle').textContent = titles[sectionName];
+            
+            // Load section data
+            if (sectionName === 'dashboard') {
+                loadDashboard();
+            } else if (sectionName === 'keys') {
+                loadKeys();
+            }
+        }
 
-let currentUser = localStorage.getItem('currentUser') || null;
-let vars = JSON.parse(localStorage.getItem('vars') || '[]');
-let purchases = JSON.parse(localStorage.getItem('purchases') || '[]');
+        // API Functions
+        async function apiCall(endpoint, options = {}) {
+            try {
+                const response = await fetch(API_BASE + endpoint, {
+                    headers: {
+                        'Authorization': 'Bearer ' + AUTH_TOKEN,
+                        'Content-Type': 'application/json',
+                        ...options.headers
+                    },
+                    ...options
+                });
+                
+                if (!response.ok) throw new Error('API error: ' + response.status);
+                return await response.json();
+            } catch (error) {
+                showNotification('API Connection Failed: ' + error.message, 'error');
+                throw error;
+            }
+        }
 
-// Modal logic
-const modal=document.getElementById('authModal');
-const signinForm=document.getElementById('signinForm');
-const signupForm=document.getElementById('signupForm');
-function openModal(){modal.classList.add('show');}
-function closeModal(){modal.classList.remove('show');}
-document.getElementById('btnOpenAuth').onclick=openModal;
-document.getElementById('btnStart').onclick=openModal;
-document.getElementById('closeAuth').onclick=closeModal;
-document.getElementById('toSignup').onclick=()=>{
-  signinForm.classList.add('hidden');
-  signupForm.classList.remove('hidden');
-  document.getElementById('authTitle').innerText='Sign Up';
-};
-document.getElementById('toSignin').onclick=()=>{
-  signinForm.classList.remove('hidden');
-  signupForm.classList.add('hidden');
-  document.getElementById('authTitle').innerText='Sign In';
-};
+        async function loadDashboard() {
+            try {
+                const stats = await apiCall('/stats');
+                document.getElementById('totalKeys').textContent = stats.total_keys;
+                document.getElementById('activeKeys').textContent = stats.active_keys;
+                document.getElementById('redeemedKeys').textContent = stats.redeemed_keys;
+                document.getElementById('expiredKeys').textContent = stats.expired_keys;
+                
+                updateLastUpdateTime();
+            } catch (error) {
+                // Stats will show 0
+            }
+        }
 
-// Show dashboard if already logged in
-if(currentUser) showDashboardButtons(currentUser);
+        async function loadKeys() {
+            try {
+                const data = await apiCall('/keys');
+                const tbody = document.getElementById('keysTable');
+                
+                if (data.keys.length === 0) {
+                    tbody.innerHTML = '<tr><td colspan="6" class="px-4 py-8 text-center text-gray-500">No keys found</td></tr>';
+                    return;
+                }
 
-// Signup
-document.getElementById('btnSignUp').onclick=()=>{
-  const email=document.getElementById('suEmail').value;
-  const password=document.getElementById('suPassword').value;
-  if(!email||!password){alert('Fill in all fields');return;}
-  if(users.find(u=>u.email===email)){alert('User exists');return;}
-  users.push({email,password});
-  localStorage.setItem('users', JSON.stringify(users));
-  currentUser=email;
-  localStorage.setItem('currentUser', currentUser);
-  alert('Signup successful!');
-  showDashboardButtons(email);
-  closeModal();
-  document.getElementById('suEmail').value='';
-  document.getElementById('suPassword').value='';
-};
+                tbody.innerHTML = data.keys.map(key => `
+                    <tr class="hover:bg-gray-50">
+                        <td class="px-4 py-3">
+                            <div class="font-mono text-sm" title="${key.key}">${key.key.substring(0, 12)}...</div>
+                        </td>
+                        <td class="px-4 py-3">
+                            <span class="px-2 py-1 text-xs rounded ${key.redeemed ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800'}">
+                                ${key.redeemed ? 'Redeemed' : 'Available'}
+                            </span>
+                        </td>
+                        <td class="px-4 py-3 text-sm">
+                            ${key.user_id ? `ID: ${key.user_id}` : 'Not assigned'}
+                        </td>
+                        <td class="px-4 py-3 text-sm">
+                            ${new Date(key.expires_at).toLocaleDateString()}
+                        </td>
+                        <td class="px-4 py-3">
+                            <span class="px-2 py-1 text-xs rounded ${key.hwid_bound ? 'bg-blue-100 text-blue-800' : 'bg-gray-100 text-gray-800'}">
+                                ${key.hwid_bound ? 'Bound' : 'Not Bound'}
+                            </span>
+                        </td>
+                        <td class="px-4 py-3">
+                            <div class="flex space-x-2">
+                                <button onclick="viewKey('${key.key}')" class="text-blue-500 hover:text-blue-700" title="View Details">
+                                    <i class="fas fa-eye"></i>
+                                </button>
+                                <button onclick="revokeKey('${key.key}')" class="text-red-500 hover:text-red-700" title="Revoke Key">
+                                    <i class="fas fa-trash"></i>
+                                </button>
+                            </div>
+                        </td>
+                    </tr>
+                `).join('');
+            } catch (error) {
+                document.getElementById('keysTable').innerHTML = '<tr><td colspan="6" class="px-4 py-8 text-center text-red-500">Failed to load keys</td></tr>';
+            }
+        }
 
-// Signin
-document.getElementById('btnSignIn').onclick=()=>{
-  const email=document.getElementById('siEmail').value;
-  const password=document.getElementById('siPassword').value;
-  const user=users.find(u=>u.email===email && u.password===password);
-  if(!user){alert('Invalid credentials');return;}
-  currentUser=email;
-  localStorage.setItem('currentUser', currentUser);
-  alert('Login successful!');
-  showDashboardButtons(email);
-  closeModal();
-  document.getElementById('siEmail').value='';
-  document.getElementById('siPassword').value='';
-};
+        async function createSingleKey() {
+            const duration = parseInt(document.getElementById('keyDuration').value);
+            const userId = document.getElementById('keyUserId').value;
+            const note = document.getElementById('keyNote').value;
 
-// Logout
-document.getElementById('btnLogout').onclick = () => {
-  currentUser=null;
-  localStorage.removeItem('currentUser');
-  document.getElementById('btnDashboard').style.display='none';
-  document.getElementById('btnOwner').style.display='none';
-  document.getElementById('btnLogout').style.display='none';
-  alert('Logged out!');
-};
+            try {
+                const result = await apiCall('/keys/create', {
+                    method: 'POST',
+                    body: JSON.stringify({ duration, note })
+                });
 
-// Dashboard toggle
-document.getElementById('btnDashboard').onclick=()=>document.getElementById('createSection').classList.toggle('hidden');
-document.getElementById('btnOwner').onclick=()=>document.getElementById('ownerSection').classList.toggle('hidden');
+                document.getElementById('generatedKey').textContent = result.key;
+                document.getElementById('keyResult').classList.remove('hidden');
+                
+                showNotification('Key created successfully!', 'success');
+                loadDashboard();
+                loadKeys();
+            } catch (error) {
+                showNotification('Failed to create key', 'error');
+            }
+        }
 
-function showDashboardButtons(email){
-  document.getElementById('btnDashboard').style.display='inline';
-  document.getElementById('btnLogout').style.display='inline';
-  if(email==='prazee@.com') document.getElementById('btnOwner').style.display='inline';
-  renderVars();
-}
+        async function revokeKey(key) {
+            if (!confirm('Are you sure you want to revoke this key?')) return;
+            
+            try {
+                await apiCall('/keys/' + key + '/revoke', { method: 'POST' });
+                showNotification('Key revoked successfully', 'success');
+                loadDashboard();
+                loadKeys();
+            } catch (error) {
+                showNotification('Failed to revoke key', 'error');
+            }
+        }
 
-// Create variable
-document.getElementById('btnCreate').onclick=()=>{
-  const name=document.getElementById('varName').value;
-  const desc=document.getElementById('varDesc').value;
-  const price=document.getElementById('varPrice').value;
-  if(!name||!price){alert('Name and price required');return;}
-  const variable={name,desc,price};
-  vars.push(variable);
-  localStorage.setItem('vars', JSON.stringify(vars));
-  renderVars();
-  document.getElementById('varName').value='';
-  document.getElementById('varDesc').value='';
-  document.getElementById('varPrice').value='';
-};
+        function viewKey(key) {
+            alert('Key: ' + key + '\nUse /keyinfo in Discord for detailed information');
+        }
 
-// Render variables
-function renderVars(){
-  const container=document.getElementById('myVars');
-  container.innerHTML='';
-  vars.forEach(variable=>{
-    const card=document.createElement('div');
-    card.className='card';
-    card.innerHTML=`
-      <strong>${variable.name}</strong><br>${variable.desc}<br>$${variable.price}<br>
-      <button class="buyBtn">Buy</button>
-    `;
-    card.querySelector('.buyBtn').onclick=()=>{
-      if(!currentUser){alert('Sign in first');return;}
-      const invoiceId='INV-'+Math.floor(Math.random()*1000000);
-      const value='SECRET-'+variable.name; 
-      purchases.push({user:currentUser,variableName:variable.name,invoiceId,value});
-      localStorage.setItem('purchases', JSON.stringify(purchases));
-      alert(`Invoice ID: ${invoiceId} saved locally!`);
-    };
-    container.appendChild(card);
-  });
-  renderOwnerDashboard();
-}
+        function copyKey() {
+            const key = document.getElementById('generatedKey').textContent;
+            navigator.clipboard.writeText(key).then(() => {
+                showNotification('Key copied to clipboard!', 'success');
+            });
+        }
 
-// Owner dashboard
-function renderOwnerDashboard(){
-  const container=document.getElementById('ownerVars');
-  container.innerHTML='';
-  if(currentUser!=='prazee@.com') return;
-  purchases.forEach(p=>{
-    const pEl=document.createElement('p');
-    pEl.innerText=`${p.user} bought ${p.variableName}, Invoice: ${p.invoiceId}, Value: ${p.value}`;
-    container.appendChild(pEl);
-  });
-}
-</script>
+        function hideKeyResult() {
+            document.getElementById('keyResult').classList.add('hidden');
+        }
 
+        function refreshAll() {
+            loadDashboard();
+            if (document.getElementById('keys-section').classList.contains('hidden') === false) {
+                loadKeys();
+            }
+            showNotification('Data refreshed', 'info');
+        }
+
+        function updateLastUpdateTime() {
+            document.getElementById('lastUpdateTime').textContent = new Date().toLocaleTimeString();
+        }
+
+        function showNotification(message, type = 'info') {
+            // Create notification element
+            const notification = document.createElement('div');
+            const bgColor = type === 'success' ? 'bg-green-500' : 
+                           type === 'error' ? 'bg-red-500' : 'bg-blue-500';
+            
+            notification.className = `fixed top-4 right-4 ${bgColor} text-white px-6 py-3 rounded-lg shadow-lg z-50 fade-in`;
+            notification.innerHTML = `
+                <div class="flex items-center">
+                    <i class="fas fa-${type === 'success' ? 'check' : type === 'error' ? 'exclamation-triangle' : 'info'}-circle mr-2"></i>
+                    ${message}
+                </div>
+            `;
+            
+            document.body.appendChild(notification);
+            
+            setTimeout(() => {
+                notification.remove();
+            }, 3000);
+        }
+
+        // Placeholder functions for future features
+        function batchGenerate() {
+            showNotification('Batch generation feature coming soon', 'info');
+        }
+
+        function exportKeys() {
+            showNotification('Export feature coming soon', 'info');
+        }
+
+        // Initialize dashboard on load
+        document.addEventListener('DOMContentLoaded', function() {
+            loadDashboard();
+            setInterval(loadDashboard, 30000); // Refresh every 30 seconds
+        });
+    </script>
 </body>
 </html>
