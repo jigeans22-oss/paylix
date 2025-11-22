@@ -52,7 +52,7 @@
             <div class="absolute bottom-0 left-0 right-0 p-4 border-t">
                 <div class="flex items-center justify-between text-sm">
                     <span class="text-gray-600">Status</span>
-                    <span id="connectionStatus" class="bg-green-500 text-white px-2 py-1 rounded text-xs">Connected</span>
+                    <span id="connectionStatus" class="bg-red-500 text-white px-2 py-1 rounded text-xs">Connecting...</span>
                 </div>
             </div>
         </div>
@@ -68,8 +68,11 @@
                             <button onclick="refreshAll()" class="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-lg flex items-center transition">
                                 <i class="fas fa-sync-alt mr-2"></i>Refresh
                             </button>
+                            <button onclick="testConnection()" class="bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded-lg flex items-center transition">
+                                <i class="fas fa-plug mr-2"></i>Test Connection
+                            </button>
                             <div class="text-sm text-gray-600">
-                                Last update: <span id="lastUpdateTime">Just now</span>
+                                Last update: <span id="lastUpdateTime">Never</span>
                             </div>
                         </div>
                     </div>
@@ -152,28 +155,28 @@
                                         <i class="fas fa-robot text-blue-500 mr-3"></i>
                                         <span>Discord Bot</span>
                                     </div>
-                                    <span class="bg-green-500 text-white px-2 py-1 rounded text-xs">Online</span>
+                                    <span class="bg-gray-500 text-white px-2 py-1 rounded text-xs" id="botStatus">Unknown</span>
                                 </div>
                                 <div class="flex justify-between items-center p-3 bg-gray-50 rounded-lg">
                                     <div class="flex items-center">
                                         <i class="fas fa-server text-green-500 mr-3"></i>
                                         <span>API Server</span>
                                     </div>
-                                    <span class="bg-green-500 text-white px-2 py-1 rounded text-xs" id="apiStatus">Online</span>
+                                    <span class="bg-gray-500 text-white px-2 py-1 rounded text-xs" id="apiStatus">Unknown</span>
                                 </div>
                                 <div class="flex justify-between items-center p-3 bg-gray-50 rounded-lg">
                                     <div class="flex items-center">
                                         <i class="fas fa-shield-alt text-purple-500 mr-3"></i>
                                         <span>HWID Protection</span>
                                     </div>
-                                    <span class="bg-green-500 text-white px-2 py-1 rounded text-xs">Active</span>
+                                    <span class="bg-gray-500 text-white px-2 py-1 rounded text-xs" id="hwidStatus">Unknown</span>
                                 </div>
                                 <div class="flex justify-between items-center p-3 bg-gray-50 rounded-lg">
                                     <div class="flex items-center">
                                         <i class="fas fa-database text-yellow-500 mr-3"></i>
                                         <span>Database</span>
                                     </div>
-                                    <span class="bg-green-500 text-white px-2 py-1 rounded text-xs">Healthy</span>
+                                    <span class="bg-gray-500 text-white px-2 py-1 rounded text-xs" id="dbStatus">Unknown</span>
                                 </div>
                             </div>
                         </div>
@@ -184,8 +187,8 @@
                         <h3 class="text-lg font-semibold text-gray-800 mb-4">Recent Activity</h3>
                         <div id="recentActivity" class="space-y-2">
                             <div class="text-center text-gray-500 py-4">
-                                <i class="fas fa-spinner fa-spin text-xl mb-2"></i>
-                                <div>Loading activity...</div>
+                                <i class="fas fa-plug text-xl mb-2"></i>
+                                <div>Connect to server to view activity</div>
                             </div>
                         </div>
                     </div>
@@ -256,7 +259,12 @@
                                     </tr>
                                 </thead>
                                 <tbody id="keysTable" class="divide-y divide-gray-200">
-                                    <!-- Keys will be loaded here -->
+                                    <tr>
+                                        <td colspan="6" class="px-4 py-8 text-center text-gray-500">
+                                            <i class="fas fa-plug text-xl mb-2"></i>
+                                            <div>Connect to server to view keys</div>
+                                        </td>
+                                    </tr>
                                 </tbody>
                             </table>
                         </div>
@@ -269,7 +277,7 @@
                         <h3 class="text-lg font-semibold text-gray-800 mb-4">User Management</h3>
                         <div class="text-center text-gray-500 py-8">
                             <i class="fas fa-users text-4xl mb-3 opacity-50"></i>
-                            <p>User management features coming soon</p>
+                            <p>Connect to server to manage users</p>
                             <p class="text-sm">This section will show detailed user information and activity</p>
                         </div>
                     </div>
@@ -283,33 +291,31 @@
                             <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                                 <div>
                                     <label class="block text-sm font-medium text-gray-700 mb-2">API Configuration</label>
-                                    <input type="text" value="http://localhost:8080/api" class="w-full border rounded-lg px-3 py-2 bg-gray-50" readonly>
+                                    <input type="text" id="apiUrl" value="http://104.234.236.62:30133/api" class="w-full border rounded-lg px-3 py-2 bg-gray-50" readonly>
                                 </div>
                                 <div>
                                     <label class="block text-sm font-medium text-gray-700 mb-2">Authentication Token</label>
                                     <div class="flex">
-                                        <input type="password" value="••••••••••••" class="w-full border rounded-l-lg px-3 py-2 bg-gray-50" readonly>
-                                        <button class="bg-gray-500 text-white px-4 rounded-r-lg">Show</button>
+                                        <input type="password" id="authToken" value="••••••••••••" class="w-full border rounded-l-lg px-3 py-2 bg-gray-50" readonly>
+                                        <button onclick="toggleTokenVisibility()" class="bg-gray-500 text-white px-4 rounded-r-lg">Show</button>
                                     </div>
                                 </div>
                             </div>
                             
                             <div class="border-t pt-4">
-                                <h4 class="font-medium text-gray-700 mb-3">Security Settings</h4>
+                                <h4 class="font-medium text-gray-700 mb-3">Connection Status</h4>
                                 <div class="space-y-3">
-                                    <div class="flex items-center justify-between">
-                                        <span>HWID Protection</span>
-                                        <label class="relative inline-flex items-center cursor-pointer">
-                                            <input type="checkbox" class="sr-only peer" checked>
-                                            <div class="w-11 h-6 bg-gray-200 peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
-                                        </label>
+                                    <div class="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                                        <span>Server Reachable</span>
+                                        <span id="serverReachable" class="px-2 py-1 rounded text-xs bg-red-500 text-white">No</span>
                                     </div>
-                                    <div class="flex items-center justify-between">
-                                        <span>Auto-expire Keys</span>
-                                        <label class="relative inline-flex items-center cursor-pointer">
-                                            <input type="checkbox" class="sr-only peer" checked>
-                                            <div class="w-11 h-6 bg-gray-200 peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
-                                        </label>
+                                    <div class="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                                        <span>Authentication Valid</span>
+                                        <span id="authValid" class="px-2 py-1 rounded text-xs bg-red-500 text-white">No</span>
+                                    </div>
+                                    <div class="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                                        <span>Last Successful Request</span>
+                                        <span id="lastSuccess" class="text-sm text-gray-600">Never</span>
                                     </div>
                                 </div>
                             </div>
@@ -321,8 +327,112 @@
     </div>
 
     <script>
-        const API_BASE = 'http://localhost:8080/api';
-        const AUTH_TOKEN = 'your-secret-key-here-change-this';
+        // Configuration - UPDATE THESE FOR YOUR SETUP
+        const API_BASE = 'http://104.234.236.62:30133/api';
+        const AUTH_TOKEN = 'your-secret-key-here-change-this'; // Must match your bot's web_secret_key
+
+        let isConnected = false;
+
+        // Enhanced API Function with Better Error Handling
+        async function apiCall(endpoint, options = {}) {
+            try {
+                console.log(`🔄 Making API call to: ${API_BASE}${endpoint}`);
+                
+                const response = await fetch(API_BASE + endpoint, {
+                    headers: {
+                        'Authorization': 'Bearer ' + AUTH_TOKEN,
+                        'Content-Type': 'application/json',
+                        ...options.headers
+                    },
+                    ...options
+                });
+                
+                console.log(`📡 Response status: ${response.status}`);
+                
+                if (!response.ok) {
+                    const errorText = await response.text();
+                    throw new Error(`HTTP ${response.status}: ${errorText}`);
+                }
+                
+                const data = await response.json();
+                console.log('✅ API call successful:', data);
+                
+                // Update last successful request
+                document.getElementById('lastSuccess').textContent = new Date().toLocaleTimeString();
+                document.getElementById('authValid').className = 'px-2 py-1 rounded text-xs bg-green-500 text-white';
+                document.getElementById('authValid').textContent = 'Yes';
+                
+                return data;
+                
+            } catch (error) {
+                console.error('❌ API Connection Failed:', error);
+                
+                // More specific error messages
+                if (error.message.includes('Failed to fetch')) {
+                    showNotification('Cannot connect to server. Check if the bot is running and the IP/port is correct.', 'error');
+                    document.getElementById('serverReachable').className = 'px-2 py-1 rounded text-xs bg-red-500 text-white';
+                    document.getElementById('serverReachable').textContent = 'No';
+                } else if (error.message.includes('401')) {
+                    showNotification('Invalid authentication token. Check your AUTH_TOKEN matches the bot configuration.', 'error');
+                    document.getElementById('authValid').className = 'px-2 py-1 rounded text-xs bg-red-500 text-white';
+                    document.getElementById('authValid').textContent = 'No';
+                } else if (error.message.includes('404')) {
+                    showNotification('API endpoint not found. Check the API_BASE URL.', 'error');
+                } else {
+                    showNotification('API Error: ' + error.message, 'error');
+                }
+                
+                throw error;
+            }
+        }
+
+        // Connection Test Function
+        async function testConnection() {
+            try {
+                console.log('🧪 Testing connection to:', API_BASE);
+                showNotification('Testing connection to server...', 'info');
+                
+                // First test basic connectivity
+                const baseResponse = await fetch(API_BASE.replace('/api', ''), {
+                    method: 'GET'
+                });
+                
+                if (baseResponse.ok) {
+                    document.getElementById('serverReachable').className = 'px-2 py-1 rounded text-xs bg-green-500 text-white';
+                    document.getElementById('serverReachable').textContent = 'Yes';
+                    
+                    // Then test API with authentication
+                    const stats = await apiCall('/stats');
+                    
+                    showNotification('✅ Successfully connected to server!', 'success');
+                    document.getElementById('connectionStatus').className = 'bg-green-500 text-white px-2 py-1 rounded text-xs';
+                    document.getElementById('connectionStatus').textContent = 'Connected';
+                    document.getElementById('apiStatus').className = 'bg-green-500 text-white px-2 py-1 rounded text-xs';
+                    document.getElementById('apiStatus').textContent = 'Online';
+                    document.getElementById('botStatus').className = 'bg-green-500 text-white px-2 py-1 rounded text-xs';
+                    document.getElementById('botStatus').textContent = 'Online';
+                    document.getElementById('hwidStatus').className = 'bg-green-500 text-white px-2 py-1 rounded text-xs';
+                    document.getElementById('hwidStatus').textContent = 'Active';
+                    document.getElementById('dbStatus').className = 'bg-green-500 text-white px-2 py-1 rounded text-xs';
+                    document.getElementById('dbStatus').textContent = 'Healthy';
+                    
+                    isConnected = true;
+                    return true;
+                } else {
+                    throw new Error(`Server responded with ${baseResponse.status}`);
+                }
+            } catch (error) {
+                console.error('Connection test failed:', error);
+                showNotification('❌ Cannot connect to server: ' + error.message, 'error');
+                document.getElementById('connectionStatus').className = 'bg-red-500 text-white px-2 py-1 rounded text-xs';
+                document.getElementById('connectionStatus').textContent = 'Disconnected';
+                document.getElementById('apiStatus').className = 'bg-red-500 text-white px-2 py-1 rounded text-xs';
+                document.getElementById('apiStatus').textContent = 'Offline';
+                
+                isConnected = false;
+                return false;
+            }
+        }
 
         // Navigation
         function showSection(sectionName) {
@@ -353,35 +463,24 @@
             };
             document.getElementById('pageTitle').textContent = titles[sectionName];
             
-            // Load section data
-            if (sectionName === 'dashboard') {
-                loadDashboard();
-            } else if (sectionName === 'keys') {
-                loadKeys();
-            }
-        }
-
-        // API Functions
-        async function apiCall(endpoint, options = {}) {
-            try {
-                const response = await fetch(API_BASE + endpoint, {
-                    headers: {
-                        'Authorization': 'Bearer ' + AUTH_TOKEN,
-                        'Content-Type': 'application/json',
-                        ...options.headers
-                    },
-                    ...options
-                });
-                
-                if (!response.ok) throw new Error('API error: ' + response.status);
-                return await response.json();
-            } catch (error) {
-                showNotification('API Connection Failed: ' + error.message, 'error');
-                throw error;
+            // Load section data if connected
+            if (isConnected) {
+                if (sectionName === 'dashboard') {
+                    loadDashboard();
+                } else if (sectionName === 'keys') {
+                    loadKeys();
+                }
+            } else {
+                showNotification('Please connect to server first', 'warning');
             }
         }
 
         async function loadDashboard() {
+            if (!isConnected) {
+                showNotification('Not connected to server', 'error');
+                return;
+            }
+
             try {
                 const stats = await apiCall('/stats');
                 document.getElementById('totalKeys').textContent = stats.total_keys;
@@ -396,6 +495,11 @@
         }
 
         async function loadKeys() {
+            if (!isConnected) {
+                showNotification('Not connected to server', 'error');
+                return;
+            }
+
             try {
                 const data = await apiCall('/keys');
                 const tbody = document.getElementById('keysTable');
@@ -444,6 +548,11 @@
         }
 
         async function createSingleKey() {
+            if (!isConnected) {
+                showNotification('Not connected to server', 'error');
+                return;
+            }
+
             const duration = parseInt(document.getElementById('keyDuration').value);
             const userId = document.getElementById('keyUserId').value;
             const note = document.getElementById('keyNote').value;
@@ -466,6 +575,11 @@
         }
 
         async function revokeKey(key) {
+            if (!isConnected) {
+                showNotification('Not connected to server', 'error');
+                return;
+            }
+
             if (!confirm('Are you sure you want to revoke this key?')) return;
             
             try {
@@ -494,6 +608,10 @@
         }
 
         function refreshAll() {
+            if (!isConnected) {
+                testConnection();
+                return;
+            }
             loadDashboard();
             if (document.getElementById('keys-section').classList.contains('hidden') === false) {
                 loadKeys();
@@ -505,16 +623,30 @@
             document.getElementById('lastUpdateTime').textContent = new Date().toLocaleTimeString();
         }
 
+        function toggleTokenVisibility() {
+            const tokenInput = document.getElementById('authToken');
+            if (tokenInput.type === 'password') {
+                tokenInput.type = 'text';
+                tokenInput.value = AUTH_TOKEN;
+                event.target.textContent = 'Hide';
+            } else {
+                tokenInput.type = 'password';
+                tokenInput.value = '••••••••••••';
+                event.target.textContent = 'Show';
+            }
+        }
+
         function showNotification(message, type = 'info') {
             // Create notification element
             const notification = document.createElement('div');
             const bgColor = type === 'success' ? 'bg-green-500' : 
-                           type === 'error' ? 'bg-red-500' : 'bg-blue-500';
+                           type === 'error' ? 'bg-red-500' : 
+                           type === 'warning' ? 'bg-yellow-500' : 'bg-blue-500';
             
             notification.className = `fixed top-4 right-4 ${bgColor} text-white px-6 py-3 rounded-lg shadow-lg z-50 fade-in`;
             notification.innerHTML = `
                 <div class="flex items-center">
-                    <i class="fas fa-${type === 'success' ? 'check' : type === 'error' ? 'exclamation-triangle' : 'info'}-circle mr-2"></i>
+                    <i class="fas fa-${type === 'success' ? 'check' : type === 'error' ? 'exclamation-triangle' : type === 'warning' ? 'exclamation' : 'info'}-circle mr-2"></i>
                     ${message}
                 </div>
             `;
@@ -523,7 +655,7 @@
             
             setTimeout(() => {
                 notification.remove();
-            }, 3000);
+            }, 4000);
         }
 
         // Placeholder functions for future features
@@ -537,8 +669,26 @@
 
         // Initialize dashboard on load
         document.addEventListener('DOMContentLoaded', function() {
-            loadDashboard();
-            setInterval(loadDashboard, 30000); // Refresh every 30 seconds
+            console.log('🚀 Initializing dashboard...');
+            
+            // Set API URL display
+            document.getElementById('apiUrl').value = API_BASE;
+            
+            // Test connection on load
+            testConnection().then(connected => {
+                if (connected) {
+                    loadDashboard();
+                    setInterval(loadDashboard, 30000);
+                }
+            });
+            
+            // Retry connection every 15 seconds if failed
+            setInterval(() => {
+                if (!isConnected) {
+                    console.log('🔄 Retrying connection...');
+                    testConnection();
+                }
+            }, 15000);
         });
     </script>
 </body>
